@@ -2,3 +2,4 @@ openai-whisper
 streamlit
 torch
 numpy
+google-generativeai
