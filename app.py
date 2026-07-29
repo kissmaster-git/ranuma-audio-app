@@ -1,37 +1,60 @@
 import streamlit as st
 import whisper
 import os
+import google.generativeai as genai
 
 st.set_page_config(page_title="RANUMA Cloud Voice AI", page_icon="🎤", layout="centered")
 
-st.title("🚀 RANUMA - Audio Recognition")
-st.write("இப்போது ஆடியோ பதிவேற்றம் செய்து அல்லது பேசி டெக்ஸ்டாக மாற்றலாம்!")
+st.title("🚀 RANUMA - Secure Voice AI")
+st.write("பாதுகாப்பான Secrets முறையில் இயங்கும் AI சிஸ்டம்!")
+
+# Streamlit Secrets-ல் இருந்து பாதுகாப்பாக கீ-ஐ எடுத்தல்
+try:
+    gemini_api_key = st.secrets["gemini_api_key"]
+    st.success("✅ Secrets-ல் இருந்து API கீ வெற்றிகரமாக எடுக்கப்பட்டது!")
+except Exception as e:
+    st.error("❌ Secrets-ல் 'gemini_api_key' சரியாக அமைக்கப்படவில்லை.")
 
 @st.cache_resource
-def load_model():
+def load_whisper_model():
     return whisper.load_model("base")
 
-with st.spinner("Whisper AI மாடல் லோட் ஆகிறது... காத்திருக்கவும்..."):
-    model = load_model()
+with st.spinner("Whisper AI மாடல் லோட் ஆகிறது..."):
+    whisper_model = load_whisper_model()
 
-st.success("AI மாடல் ரெடியாகிவிட்டது!")
-
-# Streamlit இன்-பில்ட் மைக்ரோபோன் வசதி (எந்த எரரும் வராது)
 audio_file = st.audio_input("🎤 மைக் பட்டனை அழுத்திப் பேசவும்:")
 
 if audio_file is not None:
-    st.audio(audio_file)
-    
-    # தற்காலிகமாக சேமித்தல்
     audio_path = "temp_audio.wav"
     with open(audio_path, "wb") as f:
         f.write(audio_file.getbuffer())
     
     if st.button("டெக்ஸ்டாக மாற்றுக (Transcribe)"):
         with st.spinner("ப்ராசஸ் நடந்து கொண்டிருக்கிறது..."):
-            result = model.transcribe(audio_path, language="ta")
-            st.markdown("### 📝 உங்களது டெக்ஸ்ட் முடிவு:")
-            st.info(result["text"])
+            raw_result = whisper_model.transcribe(audio_path, language="ta")
+            spoken_text = raw_result["text"]
             
+            st.markdown("### 🗣️ நீங்கள் பேசிய பேச்சுத் தமிழ்:")
+            st.warning(spoken_text)
+            
+            try:
+                genai.configure(api_key=gemini_api_key)
+                gemini_model = genai.GenerativeModel('gemini-2.5-flash')
+                
+                prompt = f"""
+                கீழே உள்ள உரை பேச்சுத் தமிழில் (Colloquial Tamil) உள்ளது. 
+                அதன் அர்த்தம் சிறிதும் மாறாமல், முறையான இலக்கணப் பிழையற்ற எழுத்துத் தமிழாக (Formal Written Tamil) மாற்றித் தரவும்.
+                கூடுதல் விளக்கங்கள் எதுவும் தேவையில்லை, திருத்தப்பட்ட உரையை மட்டும் தரவும்.
+                
+                பேச்சுத் தமிழ் உரை:
+                {spoken_text}
+                """
+                
+                response = gemini_model.generate_content(prompt)
+                st.markdown("### 📝 திருத்தப்பட்ட இலக்கணத் தமிழ்:")
+                st.success(response.text)
+            except Exception as e:
+                st.error(f"Gemini API ப்ராசஸில் பிழை: {e}")
+                
         if os.path.exists(audio_path):
             os.remove(audio_path)
