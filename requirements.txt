@@ -2,4 +2,3 @@ openai-whisper
 streamlit
 torch
 numpy
-audio-recorder-streamlit
