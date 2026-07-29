@@ -1,12 +1,11 @@
 import streamlit as st
 import whisper
 import os
-from audio_recorder_streamlit import audio_recorder
 
 st.set_page_config(page_title="RANUMA Cloud Voice AI", page_icon="🎤", layout="centered")
 
-st.title("🚀 RANUMA - Live Voice Recognition")
-st.write("இப்போது மைக்ரோபோனில் நேரடியாகப் பேசி டெக்ஸ்டாக மாற்றலாம்!")
+st.title("🚀 RANUMA - Audio Recognition")
+st.write("இப்போது ஆடியோ பதிவேற்றம் செய்து அல்லது பேசி டெக்ஸ்டாக மாற்றலாம்!")
 
 @st.cache_resource
 def load_model():
@@ -17,19 +16,16 @@ with st.spinner("Whisper AI மாடல் லோட் ஆகிறது... �
 
 st.success("AI மாடல் ரெடியாகிவிட்டது!")
 
-st.write("### 🎤 மைக்ரோபோனில் பேச கீழே உள்ள மைக் பட்டனை அழுத்தவும்:")
+# Streamlit இன்-பில்ட் மைக்ரோபோன் வசதி (எந்த எரரும் வராது)
+audio_file = st.audio_input("🎤 மைக் பட்டனை அழுத்திப் பேசவும்:")
 
-# அதிகாரப்பூர்வ ஆடியோ ரெக்கார்டர் காம்பொனென்ட்
-audio_bytes = audio_recorder()
-
-if audio_bytes:
-    # ஆடியோவை பிளே செய்து காட்டுதல்
-    st.audio(audio_bytes, format="audio/wav")
+if audio_file is not None:
+    st.audio(audio_file)
     
-    # தற்காலிகமாக ஃபைலாக சேமித்தல்
-    audio_path = "recorded_audio.wav"
+    # தற்காலிகமாக சேமித்தல்
+    audio_path = "temp_audio.wav"
     with open(audio_path, "wb") as f:
-        f.write(audio_bytes)
+        f.write(audio_file.getbuffer())
     
     if st.button("டெக்ஸ்டாக மாற்றுக (Transcribe)"):
         with st.spinner("ப்ராசஸ் நடந்து கொண்டிருக்கிறது..."):
